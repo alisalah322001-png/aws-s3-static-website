@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Static Website with Cross-Region Replication
+
+Resources:
+
+  PrimaryBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: mywebsite-primary
+      VersioningConfiguration:
+        Status: Enabled
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  ReplicaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: mywebsite-replica
+      VersioningConfiguration:
+        Status: Enabled
+
+  ReplicationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: S3ReplicationRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  BucketReplication:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: mywebsite-primary
+      ReplicationConfiguration:
+        Role: !GetAtt ReplicationRole.Arn
+        Rules:
+          - Status: Enabled
+            Prefix: ""
+            Destination:
+              Bucket: !GetAtt ReplicaBucket.Arn
